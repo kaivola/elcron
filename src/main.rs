@@ -1,6 +1,8 @@
-mod config;
-
 use chrono::{self, Days};
+
+mod config;
+mod parse_xml;
+
 
 #[tokio::main]
 async fn main() {
@@ -8,7 +10,8 @@ async fn main() {
     println!("config = {:?}", config);
     let url = build_url(&config);
     println!("url = {}", url);
-    let _body = reqwest::get(url).await.unwrap().text().await.unwrap();
+    let body = reqwest::get(url).await.unwrap().text().await.unwrap();
+    parse_xml::parse_price_xml(&body);
 }
 
 fn build_url(config: &config::Config) -> String {
