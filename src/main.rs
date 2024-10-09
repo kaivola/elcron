@@ -1,5 +1,6 @@
 mod config;
 
+use chrono::{self, Days};
 
 #[tokio::main]
 async fn main() {
@@ -11,5 +12,8 @@ async fn main() {
 }
 
 fn build_url(config: &config::Config) -> String {
-    format!("https://web-api.tp.entsoe.eu/api?securityToken={}&documentType=A44&in_Domain={}&out_Domain={}&periodStart=202312230000&periodEnd=202312242300", config.api_key, config.area, config.area)
+    let now = chrono::Utc::now();
+    let start = now.format("%Y%m%d0000").to_string();
+    let end = now.checked_add_days(Days::new(1)).unwrap().format("%Y%m%d2300").to_string();
+    format!("https://web-api.tp.entsoe.eu/api?securityToken={}&documentType=A44&in_Domain={}&out_Domain={}&periodStart={}&periodEnd={}", config.api_key, config.area, config.area, start, end)
 }
