@@ -1,10 +1,18 @@
+use core::fmt;
+
 use xml::reader::{EventReader, XmlEvent};
 
 #[derive(Debug)]
 pub struct Price {
     pub date: String,
     pub hour: u8,
-    pub price: f64,
+    pub price: f64
+}
+
+impl fmt::Display for Price {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "(date={}, hour={}, price={})", self.date, self.hour, self.price)
+    }
 }
 
 pub fn parse_price_xml(xml: &str) -> Vec<Price> {
