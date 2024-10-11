@@ -11,3 +11,4 @@
 # Example:
 # 5, above, 2, echo "Price of electricity is above 5 for 2 hours"
 # 10, below, 3, echo "Price of electricity is below 10 for 3 hours"
+10, below, 3, echo "Price of electricity is below 10 for 3 hours"

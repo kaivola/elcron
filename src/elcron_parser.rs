@@ -10,6 +10,7 @@ pub enum ActivateOn {
     Below,
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct Job {
     pub price_threshold: u16,
@@ -35,7 +36,6 @@ pub fn parse_elcron_file(filename: &str) -> Vec<Job> {
     let lines = read_elcron_lines(&file);
     if lines.is_empty() {
         error!("No valid lines found in elcron file");
-        exit(1);
     }
     let jobs = parse_lines(&lines);
     jobs
