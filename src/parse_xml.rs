@@ -1,22 +1,27 @@
 use core::fmt;
 
+use log::{error, info};
 use xml::reader::{EventReader, XmlEvent};
 
 #[derive(Debug)]
 pub struct Price {
     pub date: String,
     pub hour: u8,
-    pub price: f64
+    pub price: f64,
 }
 
 impl fmt::Display for Price {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "(date={}, hour={}, price={})", self.date, self.hour, self.price)
+        write!(
+            f,
+            "(date={}, hour={}, price={})",
+            self.date, self.hour, self.price
+        )
     }
 }
 
 pub fn parse_price_xml(xml: &str) -> Vec<Price> {
-    println!("Starting to parse XML");
+    info!("Starting to parse XML");
     let mut parser = EventReader::from_str(xml);
     let mut prices: Vec<Price> = Vec::new();
     let mut date = String::new();
@@ -28,7 +33,7 @@ pub fn parse_price_xml(xml: &str) -> Vec<Price> {
                         date = date_str.split("T").take(1).collect();
                     }
                     Err(e) => {
-                        eprintln!("Error parsing date: {e}");
+                        error!("Error parsing date: {e}");
                         break;
                     }
                     _ => {}
@@ -45,7 +50,20 @@ pub fn parse_price_xml(xml: &str) -> Vec<Price> {
                                 match name.local_name.as_str() {
                                     "position" => match parser.next() {
                                         Ok(XmlEvent::Characters(position)) => {
-                                            price_struct.hour = position.parse().unwrap();
+                                            let mut pos = position.parse().unwrap();
+                                            if pos == 24 {
+                                                pos = 0;
+                                                price_struct.date =
+                                                    chrono::NaiveDate::parse_from_str(
+                                                        &price_struct.date,
+                                                        "%Y-%m-%d",
+                                                    )
+                                                    .unwrap()
+                                                    .succ_opt()
+                                                    .unwrap()
+                                                    .to_string();
+                                            }
+                                            price_struct.hour = pos;
                                         }
                                         _ => {}
                                     },
@@ -68,7 +86,7 @@ pub fn parse_price_xml(xml: &str) -> Vec<Price> {
                                 break;
                             }
                             Err(e) => {
-                                eprintln!("Error: {e}");
+                                error!("Error: {e}");
                                 break;
                             }
                             _ => {}
@@ -81,13 +99,13 @@ pub fn parse_price_xml(xml: &str) -> Vec<Price> {
                 break;
             }
             Err(e) => {
-                eprintln!("Error: {e}");
+                error!("Error: {e}");
                 break;
             }
             _ => {}
         }
     }
-    println!("Finished parsing XML - found {} prices", prices.len());
+    info!("Finished parsing XML - found {} prices", prices.len());
     return prices;
 }
 

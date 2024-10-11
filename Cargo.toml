@@ -12,3 +12,5 @@ futures = "0.3"
 chrono = "0.4.38"
 xml = "0.8.20"
 rusqlite = { version = "0.32.1", features = ["bundled"] }
+log = "0.4.22"
+env_logger = "0.11.5"
