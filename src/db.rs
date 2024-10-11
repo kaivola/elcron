@@ -1,6 +1,6 @@
 use rusqlite::{Connection, Error};
 
-use crate::parse_xml::Price;
+use crate::xml_parser::Price;
 
 pub struct Database {
     pub connection: Connection

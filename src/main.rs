@@ -8,7 +8,7 @@ use db::Database;
 
 mod config;
 mod db;
-mod parse_xml;
+mod xml_parser;
 
 #[tokio::main]
 async fn main() {
@@ -30,7 +30,7 @@ async fn update_price_data(config: Config, db: Database) {
         let response = reqwest::get(url).await.unwrap();
         info!("Response - status: {}, size: {} bytes", response.status(), response.content_length().unwrap());
         let body = response.text().await.unwrap();
-        let prices = parse_xml::parse_price_xml(&body);
+        let prices = xml_parser::parse_price_xml(&body);
         let mut count = 0;
         for price in prices {
             match db.insert_price(&price) {
