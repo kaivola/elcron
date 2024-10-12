@@ -1,5 +1,5 @@
 use std::{
-    fs::File, io::{BufRead, BufReader, Write}, process::exit
+    fmt::Display, fs::File, io::{BufRead, BufReader, Write}, process::exit
 };
 
 use log::{error, info};
@@ -10,12 +10,17 @@ pub enum TriggerCondition {
     Below,
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub struct Job {
     pub price_threshold: u16,
     pub condition: TriggerCondition,
     pub command: String,
+}
+
+impl Display for Job {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Job(price_threshold={}, condition={:?}, command={})", self.price_threshold, self.condition, self.command)
+    }
 }
 
 impl Job {
@@ -43,7 +48,7 @@ impl Job {
         }
     }
     pub fn execute(&self) {
-        info!("Activating job: {}", self.command);
+        info!("Activating job: {}", self);
         let output = std::process::Command::new("sh")
             .arg("-c")
             .arg(self.command.clone())
@@ -57,7 +62,7 @@ pub fn parse_elcron_file(filename: &str) -> Vec<Job> {
     let file = open_elcron_file(filename);
     let lines = read_elcron_lines(&file);
     if lines.is_empty() {
-        error!("No valid lines found in elcron file");
+        panic!("No valid lines found in elcron file");
     }
     
     parse_lines(&lines)
@@ -104,9 +109,8 @@ fn read_elcron_lines(file: &File) -> Vec<String> {
 fn open_elcron_file(filename: &str) -> File {
     info!("Reading elcron file: {}", filename);
     
-    File::open(filename).unwrap_or_else(|e| {
-        error!("Error opening file: {}", e);
-        info!("Creating {} file and exiting", filename);
+    File::open(filename).unwrap_or_else(|_e| {
+        info!("File: {} not found! Creating it and exiting", filename);
         let mut new_file = File::create(filename).unwrap();
         print_elcron_file_template(&mut new_file);
         exit(1);
