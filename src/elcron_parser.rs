@@ -15,29 +15,26 @@ pub enum ActivateOn {
 pub struct Job {
     pub price_threshold: u16,
     pub activate_on: ActivateOn,
-    pub activation_duration: u8,
     pub command: String,
 }
 
 impl Job {
-    fn new(price_threshold: u16, activate_on: ActivateOn, activation_duration: u8, command: String) -> Self {
+    fn new(price_threshold: u16, activate_on: ActivateOn, command: String) -> Self {
         Self {
             price_threshold,
             activate_on,
-            activation_duration,
             command,
         }
     }
     fn from_elcron_line(line: &str) -> Self {
         let parts: Vec<&str> = line.split(',').collect();
-        if parts.len() != 4 {
+        if parts.len() != 3 {
             panic!("Invalid number of parts in elcron line: {}", line);
         }
         let price = get_price(parts[0]);
         let direction = get_direction(parts[1]);
-        let duration = get_duration(parts[2]);
-        let command = parts[3].trim().to_string();
-        Self::new(price, direction, duration, command)
+        let command = parts[2].trim().to_string();
+        Self::new(price, direction, command)
     }
     pub fn should_execute(&self, price: f64) -> bool {
         match self.activate_on {
@@ -91,13 +88,6 @@ fn get_direction(direction: &str) -> ActivateOn {
     }
 }
 
-fn get_duration(duration: &str) -> u8 {
-    match duration.trim().parse::<u8>() {
-        Ok(p) => p,
-        Err(_e) => panic!("Invalid duration: {}", duration)
-    }
-}
-
 fn read_elcron_lines(file: &File) -> Vec<String> {
     let reader = BufReader::new(file);
     let mut res = vec![];
@@ -124,19 +114,20 @@ fn open_elcron_file(filename: &str) -> File {
 }
 
 fn print_elcron_file_template(file: &mut File) {
-    let template = r#"# This file is used to define jobs that will be executed when the price of electricity is above or below a certain threshold
+    let template = r#"#This file is used to define jobs that will be executed when the price of electricity is above or below a certain threshold
 
 # The file is in the following format with columns separated by comma:
-# price, activate on, duration, command
-# 
-# price: The price of electricity that will trigger the job
-# activate on: Defines if the job will be triggered when the price is above or below the threshold
-# duration: The number of hours the price has to be above or below the threshold before for the job to be triggered
+# price, direction, command
+
+# price: The price of electricity in c/kWh that will trigger the job
+# direction: The direction of the trigger, can be either 'above' or 'below'. Determines if the job will be triggered
+# when the price is above or below the threshold
 # command: The command that will be executed when the conditions are met
 
 # Example:
-# 5, above, 2, echo "Price of electricity is above 5 for 2 hours"
-# 10, below, 3, echo "Price of electricity is below 10 for 3 hours"
+# price,    condition,  command
+# 5,        above,      echo "Price of electricity is above 5"
+# 10,       below,      echo "Price of electricity is below 10"
 "#;
     if let Err(e) = file.write_all(template.as_bytes()) { error!("Error writing to file: {}", e) }
 }
@@ -149,28 +140,26 @@ mod tests {
     #[test]
     fn test_parse_lines() {
         let lines = vec![
-            "5, above, 2, echo \"Price of electricity is above 5 for 2 hours\"".to_string(),
-            "10, below, 3, echo \"Price of electricity is below 10 for 3 hours\"".to_string()
+            "5, above, echo \"Price of electricity is above 5\"".to_string(),
+            "10, below, echo \"Price of electricity is below 10\"".to_string()
         ];
         let jobs = parse_lines(&lines);
         assert_eq!(jobs.len(), 2);
         assert_eq!(jobs[0].price_threshold, 5);
         assert_eq!(jobs[0].activate_on, ActivateOn::Above);
-        assert_eq!(jobs[0].activation_duration, 2);
-        assert_eq!(jobs[0].command, "echo \"Price of electricity is above 5 for 2 hours\"");
+        assert_eq!(jobs[0].command, "echo \"Price of electricity is above 5\"");
 
         assert_eq!(jobs[1].price_threshold, 10);
         assert_eq!(jobs[1].activate_on, ActivateOn::Below);
-        assert_eq!(jobs[1].activation_duration, 3);
-        assert_eq!(jobs[1].command, "echo \"Price of electricity is below 10 for 3 hours\"");
+        assert_eq!(jobs[1].command, "echo \"Price of electricity is below 10\"");
     }
 
     #[test]
     #[should_panic]
     fn test_parse_lines_invalid() {
         let lines = vec![
-            "5, above, 2, echo \"Price of electricity is above 5 for 2 hours\"".to_string(),
-            "10, invalid, 3, echo \"Price of electricity is below 10 for 3 hours\"".to_string()
+            "5, above, 2, echo \"Price of electricity is above 5\"".to_string(),
+            "10, invalid, 3, echo \"Price of electricity is below 10\"".to_string()
         ];
         parse_lines(&lines);
     }
@@ -179,7 +168,7 @@ mod tests {
     #[should_panic]
     fn test_parse_lines_invalid_number_of_parts() {
         let lines = vec![
-            "5, above, 2, echo \"Price of electricity is above 5 for 2 hours\"".to_string(),
+            "5, above, 2, echo \"Price of electricity is above 5\"".to_string(),
             "10, below, 3".to_string()
         ];
         parse_lines(&lines);
@@ -210,36 +199,23 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_duration() {
-        assert_eq!(get_duration("2"), 2);
-        assert_eq!(get_duration("10"), 10);
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_validate_duration_invalid() {
-        get_duration("invalid");
-    }
-
-    #[test]
     fn test_job_should_execute() {
-        let job = Job::new(5, ActivateOn::Above, 2, "echo \"test\"".to_string());
+        let job = Job::new(5, ActivateOn::Above, "echo \"test\"".to_string());
         assert!(job.should_execute(6.0));
         assert!(!job.should_execute(4.0));
     }
 
     #[test]
     fn test_job_execute() {
-        let job = Job::new(5, ActivateOn::Above, 2, "echo \"test\"".to_string());
+        let job = Job::new(5, ActivateOn::Above, "echo \"test\"".to_string());
         job.execute();
     }
 
     #[test]
     fn test_job_from_elcron_line() {
-        let job = Job::from_elcron_line("5, above, 2, echo \"test\"");
+        let job = Job::from_elcron_line("5, above, echo \"test\"");
         assert_eq!(job.price_threshold, 5);
         assert_eq!(job.activate_on, ActivateOn::Above);
-        assert_eq!(job.activation_duration, 2);
         assert_eq!(job.command, "echo \"test\"");
     }
 }
