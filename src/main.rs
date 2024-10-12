@@ -1,7 +1,7 @@
 use chrono::{Days, Duration, Local, NaiveTime, Timelike};
 use elcron_parser::parse_elcron_file;
 use env_logger::Env;
-use log::{error, info, warn};
+use log::{error, info};
 use std::thread;
 
 use config::Config;
@@ -43,7 +43,7 @@ async fn update_price_data(config: Config, db: Database) {
             match db.insert_price(&price) {
                 Err(err) => {
                     if err.to_string().contains("UNIQUE constraint failed") {
-                        warn!("Spot {} already exists in database", price);
+                        info!("Spot {} already exists in database", price);
                     } else {
                         error!("Error inserting price into database: {}", err);
                     }
@@ -81,7 +81,7 @@ fn init_db(db: &Database) {
                 info!("Created database schema");
             }
         }
-        Err(err) => error!("Error creating database schema: {}", err),
+        Err(err) => panic!("Error creating database schema: {}", err),
     }
 }
 
@@ -99,8 +99,9 @@ mod tests {
         let url = build_url(&config);
         assert!(url.contains("test_api_key"));
         assert!(url.contains("test_area"));
-        let tomorrow = chrono::Utc::now().checked_add_days(Days::new(1)).unwrap();
-        assert!(url.contains(format!("periodStart={}", tomorrow.format("%Y%m%d0000")).as_str()));
-        assert!(url.contains(format!("periodEnd={}", tomorrow.format("%Y%m%d2300")).as_str()));
+        let days_to_add = if Local::now().hour() < 15 { 0 } else { 1 };
+        let now_or_tomorrow = chrono::Utc::now().checked_add_days(Days::new(days_to_add)).unwrap();
+        assert!(url.contains(format!("periodStart={}", now_or_tomorrow.format("%Y%m%d0000")).as_str()));
+        assert!(url.contains(format!("periodEnd={}", now_or_tomorrow.format("%Y%m%d2300")).as_str()));
     }
 }

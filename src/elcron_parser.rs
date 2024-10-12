@@ -28,7 +28,17 @@ impl Job {
             command,
         }
     }
-    
+    pub fn from_elcron_line(line: &str) -> Self {
+        let parts: Vec<&str> = line.split(',').collect();
+        if parts.len() != 4 {
+            panic!("Invalid number of parts in elcron line: {}", line);
+        }
+        let price = get_price(parts[0]);
+        let direction = get_direction(parts[1]);
+        let duration = get_duration(parts[2]);
+        let command = parts[3].trim().to_string();
+        Self::new(price, direction, duration, command)
+    }
 }
 
 pub fn parse_elcron_file(filename: &str) -> Vec<Job> {
@@ -43,39 +53,34 @@ pub fn parse_elcron_file(filename: &str) -> Vec<Job> {
 
 fn parse_lines(lines: &[String]) -> Vec<Job> {
     let mut jobs = vec![];
-    for (index, line) in lines.iter().enumerate() {
-        let parts: Vec<&str> = line.split(',').collect();
-        if parts.len() != 4 {
-            error!("Invalid line in elcron file: {}", line);
-            continue;
-        }
-        let price = match parts[0].trim().parse::<u16>() {
-            Ok(p) => p,
-            Err(e) => {
-                error!("Error parsing price in line {}: {}", index, e);
-                continue;
-            }
-        };
-        let direction = match parts[1].trim().to_lowercase().as_str() {
-            "above" => ActivateOn::Above,
-            "below" => ActivateOn::Below,
-            _ => {
-                error!("Invalid direction {} in line {}", parts[1], index);
-                continue;
-            }
-        };
-        let duration = match parts[2].trim().parse::<u8>() {
-            Ok(p) => p,
-            Err(e) => {
-                error!("Error parsing price in line {}: {}", index, e);
-                continue;
-            }
-        };
-        let command = parts[3].trim().to_string();
-        jobs.push(Job::new(price, direction, duration, command));
+    for line in lines {
+        let job = Job::from_elcron_line(line);
+        jobs.push(job);
     }
-    info!("Parsed {} valid jobs from elcron file", jobs.len());
+    info!("Found {} jobs in elcron file", jobs.len());
     jobs
+}
+
+fn get_price(price: &str) -> u16 {
+    match price.trim().parse::<u16>() {
+        Ok(p) => p,
+        Err(_e) => panic!("Invalid price: {}", price)
+    }
+}
+
+fn get_direction(direction: &str) -> ActivateOn {
+    match direction.trim().to_lowercase().as_str() {
+        "above" => ActivateOn::Above,
+        "below" => ActivateOn::Below,
+        _ => panic!("Invalid direction: {}", direction)
+    }
+}
+
+fn get_duration(duration: &str) -> u8 {
+    match duration.trim().parse::<u8>() {
+        Ok(p) => p,
+        Err(_e) => panic!("Invalid duration: {}", duration)
+    }
 }
 
 fn read_elcron_lines(file: &File) -> Vec<String> {
@@ -130,8 +135,7 @@ mod tests {
     fn test_parse_lines() {
         let lines = vec![
             "5, above, 2, echo \"Price of electricity is above 5 for 2 hours\"".to_string(),
-            "10, below, 3, echo \"Price of electricity is below 10 for 3 hours\"".to_string(),
-            "invalid line".to_string(),
+            "10, below, 3, echo \"Price of electricity is below 10 for 3 hours\"".to_string()
         ];
         let jobs = parse_lines(&lines);
         assert_eq!(jobs.len(), 2);
@@ -144,5 +148,61 @@ mod tests {
         assert_eq!(jobs[1].activate_on, ActivateOn::Below);
         assert_eq!(jobs[1].activation_duration, 3);
         assert_eq!(jobs[1].command, "echo \"Price of electricity is below 10 for 3 hours\"");
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_parse_lines_invalid() {
+        let lines = vec![
+            "5, above, 2, echo \"Price of electricity is above 5 for 2 hours\"".to_string(),
+            "10, invalid, 3, echo \"Price of electricity is below 10 for 3 hours\"".to_string()
+        ];
+        parse_lines(&lines);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_parse_lines_invalid_number_of_parts() {
+        let lines = vec![
+            "5, above, 2, echo \"Price of electricity is above 5 for 2 hours\"".to_string(),
+            "10, below, 3".to_string()
+        ];
+        parse_lines(&lines);
+    }
+
+    #[test]
+    fn test_validate_price() {
+        assert_eq!(get_price("5"), 5);
+        assert_eq!(get_price("10"), 10);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_validate_price_invalid() {
+        get_price("invalid");
+    }
+
+    #[test]
+    fn test_validate_direction() {
+        assert_eq!(get_direction("above"), ActivateOn::Above);
+        assert_eq!(get_direction("below"), ActivateOn::Below);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_validate_direction_invalid() {
+        get_direction("invalid");
+    }
+
+    #[test]
+    fn test_validate_duration() {
+        assert_eq!(get_duration("2"), 2);
+        assert_eq!(get_duration("10"), 10);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_validate_duration_invalid() {
+        get_duration("invalid");
     }
 }

@@ -134,10 +134,10 @@ mod tests {
                     <position>5</position>
                     <price.amount>50.0</price.amount>
                 </Point>
-                <asd>
+                <DoNotInclude>
                     <position>6</position>
                     <price.amount>60.0</price.amount>
-                </asd>
+                </DoNotInclude>
             </root>
         "#;
         let prices = parse_price_xml(xml);
