@@ -65,7 +65,7 @@ pub fn parse_price_xml(xml: &str) -> Vec<Price> {
                                         price_struct.hour = pos;
                                     },
                                     "price.amount" => if let Ok(XmlEvent::Characters(price)) = parser.next() {
-                                        price_struct.price = price.parse().unwrap();
+                                        price_struct.price = price.parse::<f64>().unwrap() / 10.0;
                                     },
                                     _ => {}
                                 }
@@ -144,9 +144,9 @@ mod tests {
         assert_eq!(prices.len(), 5);
         assert_eq!(prices[0].date, "2021-01-01");
         assert_eq!(prices[0].hour, 1);
-        assert_eq!(prices[0].price, 10.0);
+        assert_eq!(prices[0].price, 1.0);
         assert_eq!(prices[4].date, "2021-01-02");
         assert_eq!(prices[4].hour, 5);
-        assert_eq!(prices[4].price, 50.0);
+        assert_eq!(prices[4].price, 5.0);
     }
 }
