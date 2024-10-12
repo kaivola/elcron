@@ -1,14 +1,13 @@
 #This file is used to define jobs that will be executed when the price of electricity is above or below a certain threshold
 
 # The file is in the following format with columns separated by comma:
-# price, direction, command
+# price, condition, command
 
 # price: The price of electricity in c/kWh that will trigger the job
 # condition: Can be set to above or below. The condition determines if the job will be triggered when the price is above or below the threshold
-# when the price is above or below the threshold
 # command: The command that will be executed when the conditions are met
 
 # Example:
 # price,    condition,  command
-# 5,        above,      echo "Price of electricity is above 5"
-# 10,       below,      echo "Price of electricity is below 10"
+# 5,        above,      echo "Price of electricity is above 5 for 2 hours"
+# 10,       below,      echo "Price of electricity is below 10 for 3 hours"

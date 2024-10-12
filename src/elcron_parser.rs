@@ -5,7 +5,7 @@ use std::{
 use log::{error, info};
 
 #[derive(Debug, PartialEq)]
-pub enum ActivateOn {
+pub enum TriggerCondition {
     Above,
     Below,
 }
@@ -14,15 +14,15 @@ pub enum ActivateOn {
 #[derive(Debug)]
 pub struct Job {
     pub price_threshold: u16,
-    pub activate_on: ActivateOn,
+    pub condition: TriggerCondition,
     pub command: String,
 }
 
 impl Job {
-    fn new(price_threshold: u16, activate_on: ActivateOn, command: String) -> Self {
+    fn new(price_threshold: u16, condition: TriggerCondition, command: String) -> Self {
         Self {
             price_threshold,
-            activate_on,
+            condition,
             command,
         }
     }
@@ -32,14 +32,14 @@ impl Job {
             panic!("Invalid number of parts in elcron line: {}", line);
         }
         let price = get_price(parts[0]);
-        let direction = get_direction(parts[1]);
+        let condition = get_condition(parts[1]);
         let command = parts[2].trim().to_string();
-        Self::new(price, direction, command)
+        Self::new(price, condition, command)
     }
     pub fn should_execute(&self, price: f64) -> bool {
-        match self.activate_on {
-            ActivateOn::Above => price > f64::from(self.price_threshold),
-            ActivateOn::Below => price < f64::from(self.price_threshold),
+        match self.condition {
+            TriggerCondition::Above => price > f64::from(self.price_threshold),
+            TriggerCondition::Below => price < f64::from(self.price_threshold),
         }
     }
     pub fn execute(&self) {
@@ -80,11 +80,11 @@ fn get_price(price: &str) -> u16 {
     }
 }
 
-fn get_direction(direction: &str) -> ActivateOn {
-    match direction.trim().to_lowercase().as_str() {
-        "above" => ActivateOn::Above,
-        "below" => ActivateOn::Below,
-        _ => panic!("Invalid direction: {}", direction)
+fn get_condition(condition: &str) -> TriggerCondition {
+    match condition.trim().to_lowercase().as_str() {
+        "above" => TriggerCondition::Above,
+        "below" => TriggerCondition::Below,
+        _ => panic!("Invalid condition: {}", condition)
     }
 }
 
@@ -117,10 +117,10 @@ fn print_elcron_file_template(file: &mut File) {
     let template = r#"#This file is used to define jobs that will be executed when the price of electricity is above or below a certain threshold
 
 # The file is in the following format with columns separated by comma:
-# price, direction, command
+# price, condition, command
 
 # price: The price of electricity in c/kWh that will trigger the job
-# direction: The direction of the trigger, can be either 'above' or 'below'. Determines if the job will be triggered
+# condition: Can be set to above or below. The condition determines if the job will be triggered when the price is above or below the threshold
 # when the price is above or below the threshold
 # command: The command that will be executed when the conditions are met
 
@@ -146,11 +146,11 @@ mod tests {
         let jobs = parse_lines(&lines);
         assert_eq!(jobs.len(), 2);
         assert_eq!(jobs[0].price_threshold, 5);
-        assert_eq!(jobs[0].activate_on, ActivateOn::Above);
+        assert_eq!(jobs[0].condition, TriggerCondition::Above);
         assert_eq!(jobs[0].command, "echo \"Price of electricity is above 5\"");
 
         assert_eq!(jobs[1].price_threshold, 10);
-        assert_eq!(jobs[1].activate_on, ActivateOn::Below);
+        assert_eq!(jobs[1].condition, TriggerCondition::Below);
         assert_eq!(jobs[1].command, "echo \"Price of electricity is below 10\"");
     }
 
@@ -187,27 +187,27 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_direction() {
-        assert_eq!(get_direction("above"), ActivateOn::Above);
-        assert_eq!(get_direction("below"), ActivateOn::Below);
+    fn test_validate_condition() {
+        assert_eq!(get_condition("above"), TriggerCondition::Above);
+        assert_eq!(get_condition("below"), TriggerCondition::Below);
     }
 
     #[test]
     #[should_panic]
-    fn test_validate_direction_invalid() {
-        get_direction("invalid");
+    fn test_validate_condition_invalid() {
+        get_condition("invalid");
     }
 
     #[test]
     fn test_job_should_execute() {
-        let job = Job::new(5, ActivateOn::Above, "echo \"test\"".to_string());
+        let job = Job::new(5, TriggerCondition::Above, "echo \"test\"".to_string());
         assert!(job.should_execute(6.0));
         assert!(!job.should_execute(4.0));
     }
 
     #[test]
     fn test_job_execute() {
-        let job = Job::new(5, ActivateOn::Above, "echo \"test\"".to_string());
+        let job = Job::new(5, TriggerCondition::Above, "echo \"test\"".to_string());
         job.execute();
     }
 
@@ -215,7 +215,7 @@ mod tests {
     fn test_job_from_elcron_line() {
         let job = Job::from_elcron_line("5, above, echo \"test\"");
         assert_eq!(job.price_threshold, 5);
-        assert_eq!(job.activate_on, ActivateOn::Above);
+        assert_eq!(job.condition, TriggerCondition::Above);
         assert_eq!(job.command, "echo \"test\"");
     }
 }
