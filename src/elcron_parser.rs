@@ -20,7 +20,7 @@ pub struct Job {
 }
 
 impl Job {
-    pub fn new(price_threshold: u16, activate_on: ActivateOn, activation_duration: u8, command: String) -> Self {
+    fn new(price_threshold: u16, activate_on: ActivateOn, activation_duration: u8, command: String) -> Self {
         Self {
             price_threshold,
             activate_on,
@@ -38,6 +38,21 @@ impl Job {
         let duration = get_duration(parts[2]);
         let command = parts[3].trim().to_string();
         Self::new(price, direction, duration, command)
+    }
+    pub fn should_execute(&self, price: f64) -> bool {
+        match self.activate_on {
+            ActivateOn::Above => price > f64::from(self.price_threshold),
+            ActivateOn::Below => price < f64::from(self.price_threshold),
+        }
+    }
+    pub fn execute(&self) {
+        info!("Activating job: {}", self.command);
+        let output = std::process::Command::new("sh")
+            .arg("-c")
+            .arg(self.command.clone())
+            .output()
+            .expect("Failed to execute command");
+        info!("Output: {}", String::from_utf8_lossy(&output.stdout).to_string().trim());
     }
 }
 
@@ -204,5 +219,27 @@ mod tests {
     #[should_panic]
     fn test_validate_duration_invalid() {
         get_duration("invalid");
+    }
+
+    #[test]
+    fn test_job_should_execute() {
+        let job = Job::new(5, ActivateOn::Above, 2, "echo \"test\"".to_string());
+        assert!(job.should_execute(6.0));
+        assert!(!job.should_execute(4.0));
+    }
+
+    #[test]
+    fn test_job_execute() {
+        let job = Job::new(5, ActivateOn::Above, 2, "echo \"test\"".to_string());
+        job.execute();
+    }
+
+    #[test]
+    fn test_job_from_elcron_line() {
+        let job = Job::from_elcron_line("5, above, 2, echo \"test\"");
+        assert_eq!(job.price_threshold, 5);
+        assert_eq!(job.activate_on, ActivateOn::Above);
+        assert_eq!(job.activation_duration, 2);
+        assert_eq!(job.command, "echo \"test\"");
     }
 }
