@@ -48,30 +48,24 @@ pub fn parse_price_xml(xml: &str) -> Vec<Price> {
                         match parser.next() {
                             Ok(XmlEvent::StartElement { name, .. }) => {
                                 match name.local_name.as_str() {
-                                    "position" => match parser.next() {
-                                        Ok(XmlEvent::Characters(position)) => {
-                                            let mut pos = position.parse().unwrap();
-                                            if pos == 24 {
-                                                pos = 0;
-                                                price_struct.date =
-                                                    chrono::NaiveDate::parse_from_str(
-                                                        &price_struct.date,
-                                                        "%Y-%m-%d",
-                                                    )
-                                                    .unwrap()
-                                                    .succ_opt()
-                                                    .unwrap()
-                                                    .to_string();
-                                            }
-                                            price_struct.hour = pos;
+                                    "position" => if let Ok(XmlEvent::Characters(position)) = parser.next() {
+                                        let mut pos = position.parse().unwrap();
+                                        if pos == 24 {
+                                            pos = 0;
+                                            price_struct.date =
+                                                chrono::NaiveDate::parse_from_str(
+                                                    &price_struct.date,
+                                                    "%Y-%m-%d",
+                                                )
+                                                .unwrap()
+                                                .succ_opt()
+                                                .unwrap()
+                                                .to_string();
                                         }
-                                        _ => {}
+                                        price_struct.hour = pos;
                                     },
-                                    "price.amount" => match parser.next() {
-                                        Ok(XmlEvent::Characters(price)) => {
-                                            price_struct.price = price.parse().unwrap();
-                                        }
-                                        _ => {}
+                                    "price.amount" => if let Ok(XmlEvent::Characters(price)) = parser.next() {
+                                        price_struct.price = price.parse().unwrap();
                                     },
                                     _ => {}
                                 }
@@ -106,7 +100,7 @@ pub fn parse_price_xml(xml: &str) -> Vec<Price> {
         }
     }
     info!("Finished parsing XML - found {} prices", prices.len());
-    return prices;
+    prices
 }
 
 #[cfg(test)]

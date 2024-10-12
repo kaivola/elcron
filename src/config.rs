@@ -42,7 +42,7 @@ fn read_env_file(filename: &str) -> HashMap<String, String> {
             }
         }
     }
-    return config;
+    config
 }
 
 #[cfg(test)]

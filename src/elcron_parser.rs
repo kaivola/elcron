@@ -37,11 +37,11 @@ pub fn parse_elcron_file(filename: &str) -> Vec<Job> {
     if lines.is_empty() {
         error!("No valid lines found in elcron file");
     }
-    let jobs = parse_lines(&lines);
-    jobs
+    
+    parse_lines(&lines)
 }
 
-fn parse_lines(lines: &Vec<String>) -> Vec<Job> {
+fn parse_lines(lines: &[String]) -> Vec<Job> {
     let mut jobs = vec![];
     for (index, line) in lines.iter().enumerate() {
         let parts: Vec<&str> = line.split(',').collect();
@@ -93,14 +93,14 @@ fn read_elcron_lines(file: &File) -> Vec<String> {
 
 fn open_elcron_file(filename: &str) -> File {
     info!("Reading elcron file: {}", filename);
-    let file = File::open(filename).unwrap_or_else(|e| {
+    
+    File::open(filename).unwrap_or_else(|e| {
         error!("Error opening file: {}", e);
         info!("Creating {} file and exiting", filename);
         let mut new_file = File::create(filename).unwrap();
         print_elcron_file_template(&mut new_file);
         exit(1);
-    });
-    return file;
+    })
 }
 
 fn print_elcron_file_template(file: &mut File) {
@@ -118,10 +118,7 @@ fn print_elcron_file_template(file: &mut File) {
 # 5, above, 2, echo "Price of electricity is above 5 for 2 hours"
 # 10, below, 3, echo "Price of electricity is below 10 for 3 hours"
 "#;
-    match file.write_all(template.as_bytes()) {
-        Err(e) => error!("Error writing to file: {}", e),
-        Ok(_) => (),
-    }
+    if let Err(e) = file.write_all(template.as_bytes()) { error!("Error writing to file: {}", e) }
 }
 
 #[cfg(test)]

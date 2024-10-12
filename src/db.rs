@@ -40,6 +40,6 @@ impl Database {
         for p in price_iter.unwrap() {
             prices.push(p.unwrap());
         }
-        return prices;
+        prices
     }
 }
