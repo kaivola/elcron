@@ -20,15 +20,15 @@ pub struct Job {
 }
 
 impl Job {
-    pub fn new(price_threshold: u16, activate_on: ActivateOn, activation_duration: u8, command: String) -> Job {
-        Job {
+    pub fn new(price_threshold: u16, activate_on: ActivateOn, activation_duration: u8, command: String) -> Self {
+        Self {
             price_threshold,
             activate_on,
             activation_duration,
             command,
         }
     }
-    pub fn from_elcron_line(line: &str) -> Self {
+    fn from_elcron_line(line: &str) -> Self {
         let parts: Vec<&str> = line.split(',').collect();
         if parts.len() != 4 {
             panic!("Invalid number of parts in elcron line: {}", line);
