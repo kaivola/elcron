@@ -1,6 +1,6 @@
 use core::fmt;
 
-use log::{error, info};
+use log::info;
 use xml::reader::{EventReader, XmlEvent};
 
 #[derive(Debug)]
@@ -31,10 +31,7 @@ pub fn parse_price_xml(xml: &str) -> Vec<Price> {
                     Ok(XmlEvent::Characters(date_str)) => {
                         date = date_str.split("T").take(1).collect();
                     }
-                    Err(e) => {
-                        error!("Error parsing date: {e}");
-                        break;
-                    }
+                    Err(e) => panic!("Error parsing date from the xml: {e}"),
                     _ => {}
                 },
                 "Point" => {
@@ -78,10 +75,7 @@ pub fn parse_price_xml(xml: &str) -> Vec<Price> {
                             Ok(XmlEvent::EndDocument) => {
                                 break;
                             }
-                            Err(e) => {
-                                error!("Error: {e}");
-                                break;
-                            }
+                            Err(e) => panic!("Error: {e}"),
                             _ => {}
                         }
                     }
@@ -91,10 +85,7 @@ pub fn parse_price_xml(xml: &str) -> Vec<Price> {
             Ok(XmlEvent::EndDocument) => {
                 break;
             }
-            Err(e) => {
-                error!("Error: {e}");
-                break;
-            }
+            Err(e) => panic!("Error: {e}"),
             _ => {}
         }
     }
