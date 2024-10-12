@@ -1,13 +1,12 @@
 # elcron
 
-elcron is a simple scheduler for executing shell commands based on electricity prices. The application uses the [Entso-e Transparency Platform](https://transparency.entsoe.eu/) to get the electricity prices for the next 24 hours and schedules the commands based on the prices.
+elcron is a simple scheduler for executing shell commands based on electricity spot price. The application uses the [Entso-e Transparency Platform](https://transparency.entsoe.eu/) to get the electricity prices for the next 24 hours and schedules the commands based on the prices.
 
-Scheduling is done by using [.elcron](.elcron) file. The file contains the commands to be executed and the price thresholds for each command. In addition each job defined has condition, which can be either `above` or `below`. The condition defines whether the command is executed when the price is above or below the threshold.
-
-## Example .elcron file
-
+Scheduling is configured by [.elcron](.elcron) file. 
+Each uncommented line in the file represents a job that will be executed when the price of electricity is above or below a certain threshold. The file is in the following format with columns separated by comma:
 ```
-#This file is used to define jobs that will be executed when the price of electricity is above or below a certain threshold
+# This file is used to define jobs that will be executed 
+# when the price of electricity is above or below a certain threshold
 
 # The file is in the following format with columns separated by comma:
 # price, condition, command
@@ -39,7 +38,7 @@ AREA=ENTSO-E_AREA_CODE
 ```
 You can get the API key by registering on the [Entso-e Transparency Platform](https://transparency.entsoe.eu/) and requesting an API key by email. 
 
-Area codes can be found here: [Transparency Platform RESTful API - user guide](https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html#_areas)
+The area codes can be found here: [Transparency Platform RESTful API - user guide](https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html#_areas)
 
 For example, the area code for Finland is: `10YFI-1--------U`
 
@@ -47,7 +46,7 @@ For example, the area code for Finland is: `10YFI-1--------U`
 
 ## Usage
 
-**Note: When the application is started for the first time, it will create a `.elcron` file in the current directory and exit.**
+**Note: When the application is started for the first time, it will create a `.elcron` file (if it doesn't exist) in the current directory and exit.**
 
 
 Run the application by executing the following command:
@@ -55,3 +54,17 @@ Run the application by executing the following command:
 ./elcron
 ```
 
+## Example output
+```
+[2024-10-12T17:55:53Z INFO  elcron] The electricity price at 2024-10-12 20:55 is 0.40 c/kWh
+[2024-10-12T17:55:53Z INFO  elcron::elcron_parser] Activating job: Job(price_threshold=10, condition=Below, command=echo "Price of electricity is below 10")
+[2024-10-12T17:55:53Z INFO  elcron::elcron_parser] Output: Price of electricity is below 10
+[2024-10-12T17:55:53Z INFO  elcron] Sleeping until: 2024-10-12 21:00:00 +03:00
+[2024-10-12T18:00:00Z INFO  elcron::elcron_parser] Reading elcron file: .elcron
+[2024-10-12T18:00:00Z INFO  elcron::elcron_parser] Read 1 lines from elcron file
+[2024-10-12T18:00:00Z INFO  elcron::elcron_parser] Found 1 jobs in elcron file
+[2024-10-12T18:00:00Z INFO  elcron] The electricity price at 2024-10-12 21:00 is 0.19 c/kWh
+[2024-10-12T18:00:00Z INFO  elcron::elcron_parser] Activating job: Job(price_threshold=10, condition=Below, command=echo "Price of electricity is below 10")
+[2024-10-12T18:00:00Z INFO  elcron::elcron_parser] Output: Price of electricity is below 10
+[2024-10-12T18:00:00Z INFO  elcron] Sleeping until: 2024-10-12 22:00:00 +03:00
+```

@@ -118,7 +118,7 @@ fn open_elcron_file(filename: &str) -> File {
 }
 
 fn print_elcron_file_template(file: &mut File) {
-    let template = r#"#This file is used to define jobs that will be executed when the price of electricity is above or below a certain threshold
+    let template = r#"# This file is used to define jobs that will be executed when the price of electricity is above or below a certain threshold
 
 # The file is in the following format with columns separated by comma:
 # price, condition, command
