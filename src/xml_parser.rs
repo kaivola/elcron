@@ -13,8 +13,7 @@ pub struct Price {
 impl fmt::Display for Price {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
-            f,
-            "(date={}, hour={}, price={})",
+            f, "(date={}, hour={}, price={:.2})",
             self.date, self.hour, self.price
         )
     }
