@@ -1,6 +1,6 @@
 use chrono::{Duration, Local, Timelike};
 use env_logger::Env;
-use log::info;
+use log::{error, info};
 use std::collections::VecDeque;
 use std::thread;
 
@@ -33,7 +33,14 @@ async fn main() {
                 if price.date != now.format("%Y-%m-%d").to_string()
                     || price.hour != u8::try_from(now.hour()).unwrap()
                 {
-                    panic!("Price data is not up to date");
+                    error!("Price data missing for hour: {}", now.hour());
+                    error!("Next price data: {}", price);
+                    if price.hour > u8::try_from(now.hour()).unwrap() {
+                        info!("Adding price data back to queue");
+                        price_queue.push_front(price);
+                        sleep_until_next_hour();
+                        continue;
+                    }
                 }
                 price
             }
@@ -51,7 +58,6 @@ async fn main() {
                 job.execute();
             }
         }
-
         sleep_until_next_hour();
     }
 }
