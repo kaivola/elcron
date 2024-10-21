@@ -10,5 +10,5 @@
 
 # Example:
 # price,    condition,  command
-# 5,        above,      echo "Price of electricity is above 5"
-# 10,       below,      echo "Price of electricity is below 10"
+5,        above,      echo "Price of electricity is above 5 c/kWh"
+5,        below,      echo "Price of electricity is below 5 c/kWh"
