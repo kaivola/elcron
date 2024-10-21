@@ -1,10 +1,12 @@
-use chrono::{Duration, Local, NaiveTime, Timelike};
+use chrono::{Duration, Local, Timelike};
 use env_logger::Env;
 use log::info;
 use std::collections::VecDeque;
 use std::thread;
 
-use crate::{config::Config, xml_parser::Price, elcron_parser::parse_elcron_file, api::get_price_data};
+use crate::{
+    api::get_price_data, config::Config, elcron_parser::parse_elcron_file, xml_parser::Price,
+};
 
 mod api;
 mod config;
@@ -28,32 +30,42 @@ async fn main() {
 
         let current_price = match price_queue.pop_front() {
             Some(price) => {
-                if price.date != now.format("%Y-%m-%d").to_string() || price.hour != u8::try_from(now.hour()).unwrap() {
+                if price.date != now.format("%Y-%m-%d").to_string()
+                    || price.hour != u8::try_from(now.hour()).unwrap()
+                {
                     panic!("Price data is not up to date");
                 }
                 price
-            },
+            }
             None => {
                 panic!("No price data available");
             }
         };
-        info!("The electricity price at {} is {:.2} c/kWh", now.format("%Y-%m-%d %H:%M"), current_price.price);
+        info!(
+            "The electricity price at {} is {:.2} c/kWh",
+            now.format("%Y-%m-%d %H:%M"),
+            current_price.price
+        );
         for job in jobs {
             if job.should_execute(current_price.price) {
                 job.execute();
             }
         }
-        
+
         sleep_until_next_hour();
     }
 }
 
 fn sleep_until_next_hour() {
     let now = Local::now();
-    let next_hour = NaiveTime::from_hms_opt(now.hour(), 0, 0).unwrap() + Duration::hours(1);
-    let target_time = now.with_time(next_hour).unwrap();
-    let duration = target_time - now;
-    info!("Sleeping until: {}", target_time);
+    let next_hour = now
+        .with_minute(0)
+        .and_then(|t| t.with_second(0))
+        .and_then(|t| t.with_nanosecond(0))
+        .map(|t| t + Duration::hours(1))
+        .unwrap();
+    let duration = next_hour - now;
+    info!("Sleeping until: {}", next_hour);
     thread::sleep(duration.to_std().unwrap());
 }
 
